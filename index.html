@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Veraldlabs Sentinel Monitor - Advanced global intelligence and surveillance dashboard">
+    <meta name="author" content="Veraldlabs">
+    <meta name="theme-color" content="#0a0a0f">
+    <title>Veraldlabs Sentinel Monitor | Global Intelligence Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #111118;
+            --bg-panel: #12121a;
+            --accent-cyan: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-amber: #ffaa00;
+            --accent-red: #ff4444;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html { font-size: 14px; }
+        
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-primary);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Header */
+        .header {
+            height: 48px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid #2a2a3a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+        }
+        
+        .header-left { display: flex; align-items: center; gap: 24px; }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .logo-icon {
+            width: 20px;
+            height: 20px;
+            color: var(--accent-cyan);
+        }
+        
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        .logo-text span:first-child { color: white; }
+        .logo-text span:last-child { color: var(--accent-cyan); }
+        
+        .header-divider {
+            width: 1px;
+            height: 24px;
+            background: #2a2a3a;
+        }
+        
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 12px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .status-label { color: #666; }
+        
+        .header-time {
+            font-size: 12px;
+            color: var(--accent-cyan);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        /* Main Grid */
+        .main-grid {
+            height: calc(100vh - 48px);
+            display: grid;
+            grid-template-columns: 25% 50% 25%;
+            grid-template-rows: 2fr 1fr;
+            gap: 4px;
+            padding: 4px;
+        }
+        
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid #2a2a3a;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            height: 32px;
+            background: #1a1a24;
+            border-bottom: 1px solid #2a2a3a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+        }
+        
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        .panel-title svg {
+            width: 16px;
+            height: 16px;
+            color: var(--accent-cyan);
+        }
+        
+        .panel-badge {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .panel-content {
+            flex: 1;
+            overflow: auto;
+            padding: 8px;
+        }
+        
+        /* Camera Feeds */
+        .camera-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .camera-feed {
+            background: #0a0a0f;
+            border: 1px solid #2a2a3a;
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        
+        .camera-feed:hover { border-color: var(--accent-cyan); }
+        
+        .camera-preview {
+            height: 80px;
+            background: linear-gradient(135deg, #1a1a3a 0%, #0a0a1a 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .camera-preview::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px);
+            pointer-events: none;
+        }
+        
+        .camera-status {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .camera-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .camera-status-dot.online { background: var(--accent-green); }
+        .camera-status-dot.alert { background: var(--accent-amber); }
+        .camera-status-dot.offline { background: var(--accent-red); }
+        
+        .camera-status-text {
+            font-size: 8px;
+            color: #666;
+            text-transform: uppercase;
+        }
+        
+        .camera-id {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            font-size: 8px;
+            color: #444;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .camera-icon {
+            width: 24px;
+            height: 24px;
+            color: #444;
+            opacity: 0.5;
+        }
+        
+        .camera-info {
+            padding: 6px;
+            border-top: 1px solid #2a2a3a;
+        }
+        
+        .camera-name {
+            font-size: 10px;
+            color: #ccc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .camera-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 4px;
+            font-size: 8px;
+            color: #666;
+        }
+        
+        .camera-coords {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        /* Globe Container */
+        .globe-container {
+            position: relative;
+            flex: 1;
+        }
+        
+        #globe-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .globe-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 32px;
+            background: linear-gradient(to bottom, rgba(10,10,15,0.8), transparent);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            z-index: 10;
+        }
+        
+        .globe-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        .globe-title svg {
+            width: 16px;
+            height: 16px;
+            color: var(--accent-cyan);
+        }
+        
+        .globe-controls {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .globe-btn {
+            padding: 3px 8px;
+            font-size: 9px;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            background: #2a2a3a;
+            color: #888;
+            transition: all 0.2s;
+        }
+        
+        .globe-btn:hover { background: #3a3a4a; }
+        .globe-btn.active {
+            background: var(--accent-cyan);
+            color: #000;
+        }
+        
+        .globe-stats {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            right: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .globe-stats span span { color: #888; }
+        
+        /* Event Log */
+        .event-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .event-item {
+            padding: 8px;
+            background: #0a0a0f;
+            border: 1px solid #2a2a3a;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .event-item:hover { border-color: #444; }
+        .event-item.selected {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.05);
+        }
+        
+        .event-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        
+        .event-icon {
+            font-size: 14px;
+        }
+        
+        .event-title {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .event-time {
+            font-size: 9px;
+            color: #666;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .event-desc {
+            font-size: 9px;
+            color: #888;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .event-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .event-source {
+            font-size: 8px;
+            color: #666;
+        }
+        
+        .event-severity {
+            font-size: 8px;
+            padding: 1px 4px;
+            border-radius: 2px;
+            text-transform: uppercase;
+        }
+        
+        .event-severity.critical {
+            background: rgba(255, 68, 68, 0.2);
+            color: var(--accent-red);
+        }
+        
+        .event-severity.high {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--accent-amber);
+        }
+        
+        .event-severity.medium {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--accent-cyan);
+        }
+        
+        .event-severity.low {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
+        }
+        
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            height: 100%;
+        }
+        
+        .metric-card {
+            background: #0a0a0f;
+            border: 1px solid #2a2a3a;
+            border-radius: 4px;
+            padding: 8px;
+        }
+        
+        .metric-label {
+            font-size: 9px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        
+        .metric-value {
+            font-size: 18px;
+            font-weight: 600;
+            font-family: 'Rajdhani', sans-serif;
+        }
+        
+        .metric-value.cyan { color: var(--accent-cyan); }
+        .metric-value.green { color: var(--accent-green); }
+        .metric-value.amber { color: var(--accent-amber); }
+        .metric-value.red { color: var(--accent-red); }
+        
+        .metric-bar {
+            height: 4px;
+            background: #2a2a3a;
+            border-radius: 2px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        
+        .metric-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+        
+        .metric-bar-fill.cyan { background: var(--accent-cyan); }
+        .metric-bar-fill.green { background: var(--accent-green); }
+        .metric-bar-fill.amber { background: var(--accent-amber); }
+        .metric-bar-fill.red { background: var(--accent-red); }
+        
+        /* Threat Stats */
+        .threat-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .threat-stat {
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .threat-stat.critical {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+        }
+        
+        .threat-stat.high {
+            background: rgba(255, 170, 0, 0.1);
+            border: 1px solid rgba(255, 170, 0, 0.3);
+        }
+        
+        .threat-stat-label {
+            font-size: 8px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        
+        .threat-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            font-family: 'Rajdhani', sans-serif;
+        }
+        
+        .threat-stat.critical .threat-stat-value { color: var(--accent-red); }
+        .threat-stat.high .threat-stat-value { color: var(--accent-amber); }
+        
+        /* Progress Bars */
+        .progress-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .progress-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .progress-label {
+            font-size: 9px;
+            color: #888;
+            width: 90px;
+            text-transform: uppercase;
+        }
+        
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background: #2a2a3a;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        
+        .progress-bar-fill.red { background: var(--accent-red); }
+        .progress-bar-fill.cyan { background: var(--accent-cyan); }
+        .progress-bar-fill.amber { background: var(--accent-amber); }
+        
+        .progress-value {
+            font-size: 10px;
+            width: 30px;
+            text-align: right;
+        }
+        
+        .progress-value.red { color: var(--accent-red); }
+        .progress-value.cyan { color: var(--accent-cyan); }
+        .progress-value.amber { color: var(--accent-amber); }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #111118; }
+        ::-webkit-scrollbar-thumb { background: #2a2a3a; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-cyan); }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M2 12h20"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+                <div class="logo-text">
+                    <span>VERALDLABS</span><span>::SENTINEL</span>
+                </div>
+            </div>
+            <div class="header-divider"></div>
+            <div class="header-status">
+                <div class="status-item">
+                    <div class="status-dot"></div>
+                    <span class="status-label">SYSTEM ONLINE</span>
+                </div>
+                <div class="status-item">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                    <span class="status-label">24 SAT LINKS</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-time" id="clock">2024-01-15 14:32:18 UTC</div>
+    </header>
+
+    <main class="main-grid">
+        <!-- Camera Feeds -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    <span>Live Feeds</span>
+                </div>
+                <span class="panel-badge">4 ACTIVE</span>
+            </div>
+            <div class="panel-content">
+                <div class="camera-grid" id="camera-feeds"></div>
+            </div>
+        </div>
+
+        <!-- Globe -->
+        <div class="panel" style="grid-row: span 1;">
+            <div class="globe-container">
+                <div class="globe-overlay">
+                    <div class="globe-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="1 6 1 22 8 18 16 22 21 18 21 2 16 6 8 2 1 6"/>
+                            <line x1="8" y1="2" x2="8" y2="18"/>
+                            <line x1="16" y1="6" x2="16" y2="22"/>
+                        </svg>
+                        <span>Global Overview</span>
+                    </div>
+                    <div class="globe-controls">
+                        <button class="globe-btn active" data-view="globe">Globe</button>
+                        <button class="globe-btn" data-view="satellite">Sat</button>
+                        <button class="globe-btn" data-view="thermal">Thermal</button>
+                    </div>
+                </div>
+                <div id="globe-canvas"></div>
+                <div class="globe-stats">
+                    <span><span>ZOOM:</span> 1.0x</span>
+                    <span><span>RENDER:</span> WEBGL</span>
+                    <span><span>FPS:</span> 60</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Log -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                    <span>Event Log</span>
+                </div>
+                <span class="panel-badge" id="event-count">3 ALERTS</span>
+            </div>
+            <div class="panel-content">
+                <div class="event-list" id="event-list"></div>
+            </div>
+        </div>
+
+        <!-- System Metrics -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/>
+                        <path d="M8.5 8.5v.01"/>
+                        <path d="M16 15.5v.01"/>
+                        <path d="M12 12v.01"/>
+                        <path d="M11 17v.01"/>
+                        <path d="M7 14v.01"/>
+                    </svg>
+                    <span>System Metrics</span>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">CPU</div>
+                        <div class="metric-value cyan" id="cpu-value">34%</div>
+                        <div class="metric-bar">
+                            <div class="metric-bar-fill cyan" style="width: 34%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Memory</div>
+                        <div class="metric-value amber" id="mem-value">67%</div>
+                        <div class="metric-bar">
+                            <div class="metric-bar-fill amber" style="width: 67%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Network</div>
+                        <div class="metric-value green" id="net-value">87 Mbps</div>
+                        <div class="metric-bar">
+                            <div class="metric-bar-fill green" style="width: 87%"></div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Storage</div>
+                        <div class="metric-value cyan" id="storage-value">64%</div>
+                        <div class="metric-bar">
+                            <div class="metric-bar-fill cyan" style="width: 64%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Threat Analysis -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    <span>Threat Analysis</span>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="threat-stats">
+                    <div class="threat-stat critical">
+                        <div class="threat-stat-label">Critical</div>
+                        <div class="threat-stat-value" id="critical-count">01</div>
+                    </div>
+                    <div class="threat-stat high">
+                        <div class="threat-stat-label">High</div>
+                        <div class="threat-stat-value" id="high-count">01</div>
+                    </div>
+                </div>
+                <div class="progress-list">
+                    <div class="progress-item">
+                        <span class="progress-label">Global Threat</span>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill red" style="width: 73%"></div>
+                        </div>
+                        <span class="progress-value red">73%</span>
+                    </div>
+                    <div class="progress-item">
+                        <span class="progress-label">Cyber Activity</span>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill cyan" style="width: 45%"></div>
+                        </div>
+                        <span class="progress-value cyan">45%</span>
+                    </div>
+                    <div class="progress-item">
+                        <span class="progress-label">Conflict Zones</span>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill amber" style="width: 28%"></div>
+                        </div>
+                        <span class="progress-value amber">28%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Status -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                    <span>Network Status</span>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Uptime</div>
+                        <div class="metric-value green">14d 07h</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Latency</div>
+                        <div class="metric-value cyan">24ms</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Satellites</div>
+                        <div class="metric-value green">24/32</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Signal</div>
+                        <div class="metric-value green">STRONG</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Data
+        const cameraFeeds = [
+            { id: 'cam-001', name: 'Satellite Feed Alpha', location: 'North America', coords: '39.8283°N 98.5795°W', status: 'online' },
+            { id: 'cam-002', name: 'Border Checkpoint 7', location: 'Sector 4', coords: '32.7157°N 117.1611°W', status: 'alert' },
+            { id: 'cam-003', name: 'Port Authority Cam 12', location: 'Harbor District', coords: '33.7701°N 118.1937°W', status: 'online' },
+            { id: 'cam-004', name: 'Thermal Drone Feed', location: 'Desert Sector', coords: '36.1699°N 115.1398°W', status: 'online' }
+        ];
+
+        const events = [
+            { id: 'evt-001', type: 'earthquake', severity: 'high', title: 'Magnitude 6.2 Earthquake', desc: 'Detected off the coast of Japan', coords: { lat: 35.6762, lng: 139.6503 }, source: 'USGS' },
+            { id: 'evt-002', type: 'conflict', severity: 'critical', title: 'Air Defense Activity', desc: 'Multiple radar contacts detected', coords: { lat: 33.2232, lng: 43.6793 }, source: 'NATO' },
+            { id: 'evt-003', type: 'vessel', severity: 'medium', title: 'Merchant Vessel Alert', desc: 'Course deviation in restricted zone', coords: { lat: 25.2048, lng: 55.2708 }, source: 'AIS' }
+        ];
+
+        const eventIcons = {
+            earthquake: '⚡', conflict: '⚔️', weather: '🌪️', vessel: '🚢', flight: '✈️', traffic: '🚗'
+        };
+
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+        }
+        setInterval(updateClock, 1000);
+
+        // Render Camera Feeds
+        function renderCameras() {
+            const container = document.getElementById('camera-feeds');
+            container.innerHTML = cameraFeeds.map((cam, idx) => `
+                <div class="camera-feed" onclick="expandCamera('${cam.id}')">
+                    <div class="camera-preview">
+                        <div class="camera-status">
+                            <div class="camera-status-dot ${cam.status}"></div>
+                            <span class="camera-status-text">LIVE</span>
+                        </div>
+                        <div class="camera-id">CAM-${String(idx + 1).padStart(3, '0')}</div>
+                        <svg class="camera-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                    </div>
+                    <div class="camera-info">
+                        <div class="camera-name">${cam.name}</div>
+                        <div class="camera-meta">
+                            <span>${cam.location}</span>
+                            <span class="camera-coords">${cam.coords}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render Events
+        let selectedEventId = null;
+        function renderEvents() {
+            const container = document.getElementById('event-list');
+            container.innerHTML = events.map(evt => `
+                <div class="event-item ${selectedEventId === evt.id ? 'selected' : ''}" onclick="selectEvent('${evt.id}')">
+                    <div class="event-header">
+                        <span class="event-icon">${eventIcons[evt.type] || '📍'}</span>
+                        <span class="event-title ${getSeverityColor(evt.severity)}">${evt.title}</span>
+                        <span class="event-time">${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <div class="event-desc">${evt.desc}</div>
+                    <div class="event-footer">
+                        <span class="event-source">${evt.source}</span>
+                        <span class="event-severity ${evt.severity}">${evt.severity}</span>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('event-count').textContent = `${events.length} ALERTS`;
+            document.getElementById('critical-count').textContent = String(events.filter(e => e.severity === 'critical').length).padStart(2, '0');
+            document.getElementById('high-count').textContent = String(events.filter(e => e.severity === 'high').length).padStart(2, '0');
+        }
+
+        function getSeverityColor(severity) {
+            const colors = { critical: 'red', high: 'amber', medium: 'cyan', low: 'green' };
+            return colors[severity] || 'gray';
+        }
+
+        function selectEvent(id) {
+            selectedEventId = selectedEventId === id ? null : id;
+            renderEvents();
+            updateGlobeMarkers();
+        }
+
+        function expandCamera(id) {
+            console.log('Expand camera:', id);
+        }
+
+        // Three.js Globe
+        let scene, camera, renderer, controls, globeGroup, markersGroup;
+        let globeMarkers = [];
+
+        function initGlobe() {
+            const container = document.getElementById('globe-canvas');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#0a0a0f');
+
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.position.set(0, 0, 3.5);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enablePan = false;
+            controls.minDistance = 2;
+            controls.maxDistance = 6;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
+
+            const ambientLight = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 3, 5);
+            scene.add(directionalLight);
+
+            globeGroup = new THREE.Group();
+            scene.add(globeGroup);
+
+            // Earth
+            const earthGeo = new THREE.SphereGeometry(1, 64, 64);
+            const earthMat = new THREE.MeshPhongMaterial({
+                color: 0x1a1a2e,
+                emissive: 0x0a0a1a,
+                emissiveIntensity: 0.5,
+                shininess: 10
+            });
+            const earth = new THREE.Mesh(earthGeo, earthMat);
+            globeGroup.add(earth);
+
+            // Wireframe
+            const wireGeo = new THREE.SphereGeometry(1.005, 32, 32);
+            const wireMat = new THREE.MeshBasicMaterial({
+                color: 0x00d4ff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.1
+            });
+            const wireframe = new THREE.Mesh(wireGeo, wireMat);
+            globeGroup.add(wireframe);
+
+            // Grid
+            const gridGeo = new THREE.SphereGeometry(1.01, 24, 24);
+            const gridMat = new THREE.MeshBasicMaterial({
+                color: 0x00d4ff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.05
+            });
+            const grid = new THREE.Mesh(gridGeo, gridMat);
+            globeGroup.add(grid);
+
+            // Atmosphere
+            const atmGeo = new THREE.SphereGeometry(1.1, 32, 32);
+            const atmMat = new THREE.ShaderMaterial({
+                vertexShader: `
+                    varying vec3 vNormal;
+                    void main() {
+                        vNormal = normalize(normalMatrix * normal);
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vNormal;
+                    void main() {
+                        float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 2.0);
+                        gl_FragColor = vec4(0.0, 0.83, 1.0, 1.0) * intensity * 0.5;
+                    }
+                `,
+                blending: THREE.AdditiveBlending,
+                side: THREE.BackSide,
+                transparent: true
+            });
+            const atmosphere = new THREE.Mesh(atmGeo, atmMat);
+            globeGroup.add(atmosphere);
+
+            // Markers
+            markersGroup = new THREE.Group();
+            globeGroup.add(markersGroup);
+            updateGlobeMarkers();
+
+            // Animation
+            animate();
+
+            // Resize
+            window.addEventListener('resize', onResize);
+
+            // Click handler
+            renderer.domElement.addEventListener('click', onGlobeClick);
+        }
+
+        function latLngToVector3(lat, lng, radius) {
+            const phi = (90 - lat) * (Math.PI / 180);
+            const theta = (lng + 180) * (Math.PI / 180);
+            return new THREE.Vector3(
+                -radius * Math.sin(phi) * Math.cos(theta),
+                radius * Math.cos(phi),
+                radius * Math.sin(phi) * Math.sin(theta)
+            );
+        }
+
+        function getSeverityColorHex(severity) {
+            const colors = { critical: 0xff4444, high: 0xffaa00, medium: 0x00d4ff, low: 0x00ff88 };
+            return colors[severity] || 0x888888;
+        }
+
+        function updateGlobeMarkers() {
+            // Clear existing markers
+            while(markersGroup.children.length > 0) {
+                markersGroup.remove(markersGroup.children[0]);
+            }
+            globeMarkers = [];
+
+            events.forEach(evt => {
+                const color = getSeverityColorHex(evt.severity);
+                const isSelected = selectedEventId === evt.id;
+
+                // Marker
+                const markerGeo = new THREE.SphereGeometry(isSelected ? 0.035 : 0.025, 16, 16);
+                const markerMat = new THREE.MeshBasicMaterial({
+                    color: color,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                const marker = new THREE.Mesh(markerGeo, markerMat);
+                marker.position.copy(latLngToVector3(evt.coords.lat, evt.coords.lng, 1.03));
+                marker.userData = { eventId: evt.id };
+                markersGroup.add(marker);
+                globeMarkers.push({ mesh: marker, eventId: evt.id });
+
+                // Ring
+                const ringGeo = new THREE.RingGeometry(0.03, 0.038, 32);
+                const ringMat = new THREE.MeshBasicMaterial({
+                    color: color,
+                    transparent: true,
+                    opacity: 0.4,
+                    side: THREE.DoubleSide
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.position.copy(latLngToVector3(evt.coords.lat, evt.coords.lng, 1.03));
+                ring.lookAt(new THREE.Vector3(0, 0, 0));
+                markersGroup.add(ring);
+
+                // Line
+                const lineGeo = new THREE.BufferGeometry().setFromPoints([
+                    latLngToVector3(evt.coords.lat, evt.coords.lng, 1),
+                    latLngToVector3(evt.coords.lat, evt.coords.lng, 1.03)
+                ]);
+                const lineMat = new THREE.LineBasicMaterial({
+                    color: color,
+                    transparent: true,
+                    opacity: 0.5
+                });
+                const line = new THREE.Line(lineGeo, lineMat);
+                markersGroup.add(line);
+            });
+        }
+
+        function onGlobeClick(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            const mouse = new THREE.Vector2();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(markersGroup.children);
+
+            if (intersects.length > 0) {
+                const clicked = intersects[0].object;
+                if (clicked.userData.eventId) {
+                    selectEvent(clicked.userData.eventId);
+                }
+            }
+        }
+
+        function onResize() {
+            const container = document.getElementById('globe-canvas');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        let frame = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            frame++;
+
+            // Pulse markers
+            globeMarkers.forEach(({ mesh, eventId }) => {
+                const isSelected = selectedEventId === eventId;
+                const scale = isSelected ? 1.5 : 1 + Math.sin(frame * 0.05) * 0.2;
+                mesh.scale.setScalar(scale);
+            });
+
+            // Rotate wireframes
+            globeGroup.children[1].rotation.y += 0.0005;
+            globeGroup.children[2].rotation.y += 0.0003;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // View mode buttons
+        document.querySelectorAll('.globe-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.globe-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                const view = e.target.dataset.view;
+                const canvas = document.getElementById('globe-canvas');
+                if (view === 'thermal') {
+                    canvas.style.filter = 'sepia(1) hue-rotate(-50deg) saturate(2)';
+                } else if (view === 'satellite') {
+                    canvas.style.filter = 'grayscale(0.3) contrast(1.2)';
+                } else {
+                    canvas.style.filter = 'none';
+                }
+            });
+        });
+
+        // Simulate metric updates
+        function updateMetrics() {
+            const cpu = Math.floor(30 + Math.random() * 20);
+            const mem = Math.floor(60 + Math.random() * 15);
+            const net = Math.floor(80 + Math.random() * 15);
+            
+            document.getElementById('cpu-value').textContent = cpu + '%';
+            document.querySelector('#cpu-value + .metric-bar .metric-bar-fill').style.width = cpu + '%';
+            
+            document.getElementById('mem-value').textContent = mem + '%';
+            document.querySelector('#mem-value + .metric-bar .metric-bar-fill').style.width = mem + '%';
+            
+            document.getElementById('net-value').textContent = net + ' Mbps';
+        }
+        setInterval(updateMetrics, 3000);
+
+        // Initialize
+        renderCameras();
+        renderEvents();
+        initGlobe();
+    </script>
+</body>
+</html>
